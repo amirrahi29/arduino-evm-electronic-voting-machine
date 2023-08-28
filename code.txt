@@ -1,0 +1,91 @@
+#include <LiquidCrystal.h>
+
+// Initialize the library by associating LCD interface pins with Arduino pins
+LiquidCrystal lcd(12, 11, A5, A4, A3, A2);
+
+// Number of parties
+const int numParties = 4;
+int votes[numParties] = {0}; // Initialize vote counts to 0
+
+// Previous button state
+bool lastButtonState[numParties + 1] = {HIGH}; // +1 for the result button
+
+void setup() {
+  // Set up the LCD's number of columns and rows
+  lcd.begin(16, 2);
+  lcd.print("Voting System");
+  lcd.setCursor(0, 1);
+  lcd.print("Press buttons");
+
+  // Set pins 1 to 4 as input with pull-up resistors
+  for (int i = 1; i <= numParties; i++) {
+    pinMode(i, INPUT_PULLUP);
+  }
+  // Set pin 5 as input for the result button
+  pinMode(5, INPUT_PULLUP);
+}
+
+void loop() {
+  // Check each party button
+  for (int i = 1; i <= numParties; i++) {
+    int reading = digitalRead(i);
+    
+    // Check for button press and debouncing delay
+    if (reading == LOW && lastButtonState[i] == HIGH) {
+      // Increase the vote count for the selected party
+      votes[i - 1]++;
+      // Display the updated vote counts
+      displayVotes();
+      delay(200); // Delay to prevent multiple counts
+    }
+    lastButtonState[i] = reading;
+  }
+
+  // Check the result button
+  if (digitalRead(5) == LOW && lastButtonState[numParties] == HIGH) {
+    // Display the voting results and winner
+    displayResults();
+    delay(200); // Delay to prevent multiple counts
+  }
+  lastButtonState[numParties] = digitalRead(5);
+}
+
+void displayVotes() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Votes:");
+  for (int i = 0; i < numParties; i++) {
+    lcd.setCursor(0, 1);
+    lcd.print("Party ");
+    lcd.print(i + 1);
+    lcd.print(": ");
+    lcd.print(votes[i]);
+    delay(1000); // Display for 1 second
+  }
+}
+
+void displayResults() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Voting Results:");
+
+  int maxVotes = -1;
+  int winnerIndex = -1;
+
+  // Find the party with the most votes
+  for (int i = 0; i < numParties; i++) {
+    if (votes[i] > maxVotes) {
+      maxVotes = votes[i];
+      winnerIndex = i;
+    }
+  }
+
+  if (winnerIndex >= 0) {
+    lcd.setCursor(0, 1);
+    lcd.print("Winner: Party ");
+    lcd.print(winnerIndex + 1);
+  } else {
+    lcd.setCursor(0, 1);
+    lcd.print("No winner");
+  }
+}
